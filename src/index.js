@@ -2,20 +2,37 @@
  * Checking RFC 9485 I-Regexp compiler backed by a bounded Thompson NFA.
  */
 
+/** @import { TrefferErrorCode } from './index.js' */
+
 const PROP = /^(?:L[lmotu]?|M[cen]?|N[dlo]?|P[cdefios]?|Z[lps]?|S[ckmo]?|C[cfno]?)$/;
 const MAX = 4096, DEPTH = 64, REPEAT = 1024, STEPS = 1e6;
 
 let diags = new WeakSet(), mark = diags.add.bind(diags);
 export let isDiagnostic = diags.has.bind(diags);
+/**
+ * `code` is typed to the published union, so a code this module throws but
+ * `index.d.ts` does not declare fails to compile rather than shipping.
+ *
+ * @param {TrefferErrorCode} [code]
+ * @param {number} [limit]
+ * @param {number} [actual]
+ */
 let fault = (Type, msg, code, limit, actual) => {
-	const e = Type(msg);
+	const e = /** @type {Error & { code: TrefferErrorCode, limit: number, actual: number }} */ (Type(msg));
 	if (code) e.code = code;
 	if (limit != null) e.limit = limit;
 	if (actual != null) e.actual = actual;
 	return mark(e), e;
 };
-let bad = () => { throw fault(SyntaxError, 'Invalid I-Regexp', 'TREFFER_SYNTAX') };
-let cap = (code, limit, actual) => { throw fault(RangeError, 'I-Regexp resource limit exceeded', code, limit, actual) };
+/** @returns {never} */
+const bad = () => { throw fault(SyntaxError, 'Invalid I-Regexp', 'TREFFER_SYNTAX') };
+/**
+ * @param {TrefferErrorCode} code
+ * @param {number} [limit]
+ * @param {number} [actual]
+ * @returns {never}
+ */
+const cap = (code, limit, actual) => { throw fault(RangeError, 'I-Regexp resource limit exceeded', code, limit, actual) };
 
 // Count Unicode scalar values without allocating, rejecting lone surrogates.
 let scalarCount = (s, max, invalid, code) => {
@@ -216,7 +233,8 @@ let run = (nfa, str, full) => {
 		full || add(cur, start, pos);
 		if (cur.has(end) && (!full || pos === len)) return true;
 		if (pos === len) break;
-		const n = str.codePointAt(pos), c = String.fromCodePoint(n);
+		// `pos === len` broke out above, so there is always a code point here.
+		const n = /** @type {number} */ (str.codePointAt(pos)), c = String.fromCodePoint(n);
 		const nextPos = pos + (n > 0xffff ? 2 : 1), next = new Set();
 		for (const j of cur) {
 			spend();

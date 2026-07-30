@@ -1,13 +1,13 @@
 # treffer
 
-Tiny, bounded RFC 9485 I-Regexp matcher for JavaScript. Zero runtime dependencies, plain JS + JSDoc, hand-written declarations.
+Tiny, bounded RFC 9485 I-Regexp matcher for JavaScript. Zero runtime dependencies, plain JS + JSDoc, hand-written declarations checked against the source with `checkJs`.
 
 ## Commands
 
 - `npm run check` — reproduces the complete pull-request quality gate locally: build, bundle size, unit tests, deterministic fuzz regression, and browser CSP coverage.
 - **Non-negotiable: run `npm run check` before declaring any work done.** Passing unit tests alone is not done — a change is complete only when the full gate above is green. Never say "done", close an issue, or hand off without it.
-- `npm test` — runs `test:unit`: Node's built-in test runner under `--disallow-code-generation-from-strings` (strict-CSP simulation). Keep this on Node: Bun accepts that V8 flag but does not enforce it. Treffer has no separate type smoke test.
-- `npm run build` — creates minified ESM and CJS bundles targeting ES2024 in `dist/`.
+- `npm test` — `test:unit` (Node's built-in test runner under `--disallow-code-generation-from-strings`, a strict-CSP simulation), then `test:types`, a plain `tsc` that type-checks `src/` **and** `test/types.check.ts` in one pass. No build needed. Keep this on Node: Bun accepts that V8 flag but does not enforce it.
+- `npm run build` — tsdown creates a minified ESM bundle targeting ES2024 in `dist/`, and tsdown's `copy` carries the hand-written `src/index.d.ts` in beside it.
 - `npm run size` — checks both bundles against the budgets in `package.json`.
 - `npm run test:browser` — builds the package and runs the browser bundle in Playwright Chromium under a strict CSP.
 - Run a single suite: `node --disallow-code-generation-from-strings --test test/match.test.js`
@@ -56,7 +56,8 @@ Syntax errors throw `SyntaxError`, invalid API values throw `TypeError`, and res
 - Unit tests use `node:test` and live in `test/*.test.js`; the Playwright CSP test lives in `test/browser/`.
 - New syntax or safety behavior needs unit tests and structured fuzz coverage.
 - Keep the fuzz differential oracle restricted to short patterns and subjects so the native comparison engine cannot become a fuzzing bottleneck.
-- Runtime support is Node.js 22+ through ESM/CJS and ES2024 browser environments through a standards-based ESM bundler. There is no direct-script global or UMD build.
+- Runtime support is Node.js 22.12+ (unflagged `require(esm)`), **ESM only**, plus ES2024 browser environments through a standards-based ESM bundler. There is no CommonJS, direct-script global, or UMD build — shipping two formats would split the diagnostics WeakSet/WeakMap across a `require`/`import` seam, which no config can fix.
 - Suggested commit messages must follow Conventional Commits and be at most 80 characters.
-- `index.d.ts` is hand-written. Type generation stays disabled in `tsdown.config.js`.
+- The declaration is hand-written in `src/index.d.ts`, beside the code it describes; type generation stays disabled (`dts: false`) and tsdown's `copy` carries it into `dist/`. `dist/` is the **only** thing published — `files` is just `["dist"]`.
+- **`checkJs` over `src/` is what keeps that declaration honest.** `tsconfig.json` type-checks `src/**/*.js` with `noImplicitAny` off — that setting is the difference between 2 real errors and a flood of `noImplicitAny` noise. `fault()` and `cap()` take `TrefferErrorCode`, so a code this module throws but `src/index.d.ts` omits fails to compile. Verify with: swap a thrown code for a made-up one and confirm `npm run test:types` fails.
 - `dist/`, `.fuzz-corpus/`, and generated fuzz artifacts are not committed.
