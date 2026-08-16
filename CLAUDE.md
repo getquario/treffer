@@ -32,7 +32,7 @@ The implementation lives in `lib/index.js`, which is also exactly what ships —
 7. Treffer is a checking RFC 9485 implementation. Reject unsupported JavaScript syntax rather than interpreting it.
 8. `^` and `$` are literals in strict mode. Anchor behavior requires `{ anchors: true }`.
 9. Keep zero runtime dependencies and CSP safety.
-10. Size is a soft goal. Never remove a safety check to save bytes.
+10. Size is a soft goal. Never remove a safety check to save bytes, and **never shorten a name to save them either** — a consumer's minifier mangles every binding regardless of how it is spelled here, so short internal names buy nothing. Since `lib/` ships verbatim, those names are what appear in a consumer's stack trace. Object *property* names are the exception: minifiers cannot rename them, so `Matcher.char` and `Nfa.states` do cost real bytes — spend them anyway when they buy clarity, and raise the budget deliberately.
 
 ## Omakase pragmatism
 
@@ -63,4 +63,5 @@ Syntax errors throw `SyntaxError`, invalid API values throw `TypeError`, and res
 - **`checkJs` over `lib/` is what keeps that declaration honest.** `tsconfig.json` type-checks `lib/**/*.js` under full `strict` including `noImplicitAny`. The public types are declared once in `lib/index.d.ts` and pulled into the implementation with `@import`, so a signature that drifts from what ships fails to compile; only internal types (`Node`, `State`, `Frag`, `Matcher`, `Nfa`) are local `@typedef`s. `fault()` and `cap()` take `TrefferErrorCode`, so a code this module throws but the declaration omits fails to compile. Verify with: swap a thrown code for a made-up one and confirm `npm run test:types` fails.
 - `attw` runs with `--profile esm-only`, which skips the `node10` and `node16-cjs` resolution modes — the two this package deliberately does not support. `node16` (ESM) and `bundler` must stay green.
 - **`no-unused-expressions` is suppressed per line, never per glob.** The `cond || bad()` guard idiom trips it ~25 times in `lib/index.js`, each carrying its own `// oxlint-disable-line no-unused-expressions`. Do not "tidy" these into one `.oxlintrc.json` override: the rule staying live in that file is what still catches a genuinely dead statement there, and a glob would silently give that up. Verify by adding `PROP;` next to a suppressed line and confirming `npm run lint` fails.
+- Bindings are named for readers: `chars` not `s`, `pos` not `i`, `states` not `st`, `preds` not `ps`. True loop counters (`j`) stay single letters. Rename with a scope-aware tool, never `sed` — a bare `s` occurs inside strings, comments and unrelated scopes. Watch shorthand properties especially: renaming the binding in `{ c }` silently renames the *property* too, which is how `Matcher.c` became `Matcher.char`.
 - `.fuzz-corpus/` and generated fuzz artifacts are not committed.
