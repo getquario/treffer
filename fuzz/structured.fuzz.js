@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { FuzzedDataProvider } from '@jazzer.js/core';
-import { compile, isDiagnostic } from '../src/index.js';
+import { compile, isDiagnostic } from '../lib/index.js';
 
 const ATOM = ['a', 'b', '.', '[a-z]', '[^b]', '[-a]', '\\p{L}', '\\P{N}', '😀'];
 const pick = (data, values) => values[data.consumeIntegralInRange(0, values.length - 1)];

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { compile, isDiagnostic } from '../src/index.js';
+import { compile, isDiagnostic } from '../lib/index.js';
 
 export function fuzz(data) {
 	const pattern = data.toString();

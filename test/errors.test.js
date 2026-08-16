@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compile, isDiagnostic, match, search } from '../src/index.js';
+import { compile, isDiagnostic, match, search } from '../lib/index.js';
 
 let check = (run, Type, code, limit, actual) => assert.throws(run, e => {
 	assert.ok(e instanceof Type);
@@ -89,7 +89,7 @@ test('diagnostic provenance cannot be copied', () => {
 });
 
 test('diagnostic provenance is local to a module instance', async () => {
-	const other = await import('../src/index.js?instance=provenance');
+	const other = await import('../lib/index.js?instance=provenance');
 	let first, second;
 	try { compile('(') } catch (e) { first = e }
 	try { other.compile('(') } catch (e) { second = e }

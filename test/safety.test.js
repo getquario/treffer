@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compile, isDiagnostic } from '../src/index.js';
+import { compile, isDiagnostic } from '../lib/index.js';
 
 const notOk = (value, message) => assert.ok(!value, message);
 
 test('source contains no string-to-code constructs', () => {
-	const src = readFileSync(new URL('../src/index.js', import.meta.url), 'utf8');
+	const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8');
 	notOk(/\beval\b|\bFunction\s*\(|new\s+Function/.test(src));
 });
 

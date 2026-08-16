@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { compile, isDiagnostic } from '../src/index.js';
+import { compile, isDiagnostic } from '../lib/index.js';
 
 let outcome = fn => {
 	try { return ['value', fn()] }
