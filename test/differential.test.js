@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compile } from '../src/index.js';
+import { compile } from '../lib/index.js';
 
 let native = (pattern, full) => {
 	let out = '', cls = false;

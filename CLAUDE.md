@@ -4,20 +4,19 @@ Tiny, bounded RFC 9485 I-Regexp matcher for JavaScript. Zero runtime dependencie
 
 ## Commands
 
-- `npm run check` — reproduces the complete pull-request quality gate locally: build, bundle size, unit tests, deterministic fuzz regression, and browser CSP coverage.
+- `npm run check` — reproduces the complete pull-request quality gate locally: bundle size, unit tests, deterministic fuzz regression, and browser CSP coverage. **There is no build step.**
 - **Non-negotiable: run `npm run check` before declaring any work done.** Passing unit tests alone is not done — a change is complete only when the full gate above is green. Never say "done", close an issue, or hand off without it.
-- `npm test` — `test:unit` (Node's built-in test runner under `--disallow-code-generation-from-strings`, a strict-CSP simulation), then `test:types`, a plain `tsc` that type-checks `src/` **and** `test/types.check.ts` in one pass. No build needed. Keep this on Node: Bun accepts that V8 flag but does not enforce it.
-- `npm run build` — tsdown creates a minified ESM bundle targeting ES2024 in `dist/`, and tsdown's `copy` carries the hand-written `src/index.d.ts` in beside it.
-- `npm run size` — checks both bundles against the budgets in `package.json`.
-- `npm run test:browser` — builds the package and runs the browser bundle in Playwright Chromium under a strict CSP.
+- `npm test` — `test:unit` (Node's built-in test runner under `--disallow-code-generation-from-strings`, a strict-CSP simulation), then `test:types`: a plain `tsc` that type-checks `lib/` **and** `test/types.check.ts` in one pass, followed by `attw` against a packed tarball to catch module-resolution mistakes the compiler cannot see. Keep this on Node: Bun accepts that V8 flag but does not enforce it.
+- `npm run size` — size-limit bundles and minifies `lib/index.js` itself, then checks it against the budget in `package.json`. It measures what a consumer's bundler would ship rather than a file on disk, so it still catches a dependency accidentally being pulled in.
+- `npm run test:browser` — serves `lib/` straight to Playwright Chromium under a strict CSP.
 - Run a single suite: `node --disallow-code-generation-from-strings --test test/match.test.js`
-- `npm run bench` — runs zero-dependency compile, match, search, and scaling benchmarks against `src/`.
+- `npm run bench` — runs zero-dependency compile, match, search, and scaling benchmarks against `lib/`.
 - `npm run fuzz` — runs compile, match, and structured fuzz targets for 60 seconds each.
 - `npm run fuzz:regression` — replays the committed corpus.
 
 ## Architecture
 
-The implementation lives in `src/index.js`. `parse()` checks RFC 9485 syntax and produces a small internal tree. `build()` compiles that tree to a Thompson NFA. `run()` simulates active states as sets and computes epsilon closures with visited-state tracking.
+The implementation lives in `lib/index.js`, which is also exactly what ships — `lib/` is published as-is, unminified and unbundled. `parse()` checks RFC 9485 syntax and produces a small internal tree. `build()` compiles that tree to a Thompson NFA. `run()` simulates active states as sets and computes epsilon closures with visited-state tracking.
 
 `compile(pattern)` returns an object with `match(subject)` and `search(subject)`. The one-shot exports compile and run in one call. Strict RFC behavior is the default; `{ anchors: true }` enables `^` and `$` as a compatibility extension.
 
@@ -58,6 +57,8 @@ Syntax errors throw `SyntaxError`, invalid API values throw `TypeError`, and res
 - Keep the fuzz differential oracle restricted to short patterns and subjects so the native comparison engine cannot become a fuzzing bottleneck.
 - Runtime support is Node.js 22.12+ (unflagged `require(esm)`), **ESM only**, plus ES2024 browser environments through a standards-based ESM bundler. There is no CommonJS, direct-script global, or UMD build — shipping two formats would split the diagnostics WeakSet/WeakMap across a `require`/`import` seam, which no config can fix.
 - Suggested commit messages must follow Conventional Commits and be at most 80 characters.
-- The declaration is hand-written in `src/index.d.ts`, beside the code it describes; type generation stays disabled (`dts: false`) and tsdown's `copy` carries it into `dist/`. `dist/` is the **only** thing published — `files` is just `["dist"]`.
-- **`checkJs` over `src/` is what keeps that declaration honest.** `tsconfig.json` type-checks `src/**/*.js` with `noImplicitAny` off — that setting is the difference between 2 real errors and a flood of `noImplicitAny` noise. `fault()` and `cap()` take `TrefferErrorCode`, so a code this module throws but `src/index.d.ts` omits fails to compile. Verify with: swap a thrown code for a made-up one and confirm `npm run test:types` fails.
-- `dist/`, `.fuzz-corpus/`, and generated fuzz artifacts are not committed.
+- **There is no build.** `lib/` is published verbatim — `files` is just `["lib"]` and `exports` points straight at `lib/index.js`. Consumers get readable source and real stack traces; their own bundler does the minifying. Do not reintroduce a bundler to ship smaller bytes: measured on the tsdown build this replaced, the bundled result was identical to within 6 bytes.
+- The declaration is hand-written in `lib/index.d.ts`, beside the code it describes. It is **not** generated: `tsc` cannot keep `@internal` JSDoc typedefs out of emitted declarations ([TypeScript #38444](https://github.com/microsoft/TypeScript/issues/38444)), so generating would publish the internal AST and NFA types as API. dts-buddy has the same flaw. ESLint and execa hand-write theirs for the same reason.
+- **`checkJs` over `lib/` is what keeps that declaration honest.** `tsconfig.json` type-checks `lib/**/*.js` under full `strict` including `noImplicitAny`. The public types are declared once in `lib/index.d.ts` and pulled into the implementation with `@import`, so a signature that drifts from what ships fails to compile; only internal types (`Node`, `State`, `Frag`, `Matcher`, `Nfa`) are local `@typedef`s. `fault()` and `cap()` take `TrefferErrorCode`, so a code this module throws but the declaration omits fails to compile. Verify with: swap a thrown code for a made-up one and confirm `npm run test:types` fails.
+- `attw` runs with `--profile esm-only`, which skips the `node10` and `node16-cjs` resolution modes — the two this package deliberately does not support. `node16` (ESM) and `bundler` must stay green.
+- `.fuzz-corpus/` and generated fuzz artifacts are not committed.

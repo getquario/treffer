@@ -6,7 +6,7 @@ import {
 	type Treffer,
 	type TrefferDiagnostic,
 	type TrefferErrorCode,
-} from '../src/index.js';
+} from '../lib/index.js';
 
 const re: Treffer = compile('[0-9]+');
 const whole: boolean = re.match('42');

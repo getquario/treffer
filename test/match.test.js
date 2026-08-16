@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compile, match, search } from '../src/index.js';
+import { compile, match, search } from '../lib/index.js';
 
 const notOk = (value, message) => assert.ok(!value, message);
 

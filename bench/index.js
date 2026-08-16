@@ -1,6 +1,6 @@
 // Manual micro- and scaling benchmarks for treffer. Run with `npm run bench`.
 import assert from 'node:assert/strict';
-import { compile, match, search } from '../src/index.js';
+import { compile, match, search } from '../lib/index.js';
 
 let sink = 0;
 
