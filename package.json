@@ -1,6 +1,6 @@
 {
 	"name": "treffer",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Tiny, bounded RFC 9485 I-Regexp matcher backed by a Thompson NFA.",
 	"repository": "getquario/treffer",
 	"license": "Apache-2.0",
