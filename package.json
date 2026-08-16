@@ -1,71 +1,74 @@
 {
-	"name": "treffer",
-	"version": "0.3.0",
-	"description": "Tiny, bounded RFC 9485 I-Regexp matcher backed by a Thompson NFA.",
-	"repository": "getquario/treffer",
-	"license": "Apache-2.0",
-	"author": {
-		"name": "Robin van der Vleuten",
-		"email": "robin@webstronauts.com",
-		"url": "https://robinvdvleuten.nl"
-	},
-	"type": "module",
-	"module": "lib/index.js",
-	"types": "lib/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./lib/index.d.ts",
-			"default": "./lib/index.js"
-		}
-	},
-	"engines": {
-		"node": ">=22.0.0"
-	},
-	"files": [
-		"lib"
-	],
-	"size-limit": [
-		{
-			"path": "lib/index.js",
-			"limit": "2.1 kB"
-		}
-	],
-	"scripts": {
-		"bench": "node --disallow-code-generation-from-strings bench/index.js",
-		"check": "run-s lint size test fuzz:regression test:browser",
-		"fuzz": "npm run fuzz:prepare && run-s fuzz:compile fuzz:match fuzz:structured",
-		"fuzz:compile": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/compile.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/compile fuzz/corpus/compile -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
-		"fuzz:match": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/match.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/match fuzz/corpus/match -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
-		"fuzz:prepare": "node -e \"for (const x of ['compile','match','structured']) require('fs').mkdirSync('.fuzz-corpus/'+x,{recursive:true})\"",
-		"fuzz:regression": "run-s fuzz:regression:compile fuzz:regression:match fuzz:regression:structured",
-		"fuzz:regression:compile": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/compile.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/compile -- -timeout=25 -artifact_prefix=fuzz/",
-		"fuzz:regression:match": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/match.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/match -- -timeout=25 -artifact_prefix=fuzz/",
-		"fuzz:regression:structured": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/structured.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/structured -- -timeout=25 -artifact_prefix=fuzz/",
-		"fuzz:structured": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/structured.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/structured fuzz/corpus/structured -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
-		"lint": "oxlint --deny-warnings",
-		"size": "size-limit",
-		"test": "run-s test:unit test:types",
-		"test:browser": "playwright install chromium && node test/browser/harness.js",
-		"test:types": "tsc && attw --pack . --profile esm-only",
-		"test:unit": "node --disallow-code-generation-from-strings --test --test-concurrency=1 test/*.test.js"
-	},
-	"keywords": [
-		"iregexp",
-		"regex",
-		"regexp",
-		"rfc9485",
-		"nfa",
-		"redos"
-	],
-	"devDependencies": {
-		"@arethetypeswrong/cli": "^0.18.3",
-		"@jazzer.js/bug-detectors": "^4.0.0",
-		"@jazzer.js/core": "^4.0.0",
-		"@size-limit/preset-small-lib": "^12.1.0",
-		"npm-run-all": "^4.1.5",
-		"oxlint": "^1.78.0",
-		"playwright": "^1.61.1",
-		"size-limit": "^12.1.0",
-		"typescript": "7.0.2"
-	}
+  "name": "treffer",
+  "version": "0.3.0",
+  "description": "Tiny, bounded RFC 9485 I-Regexp matcher backed by a Thompson NFA.",
+  "keywords": [
+    "iregexp",
+    "nfa",
+    "redos",
+    "regex",
+    "regexp",
+    "rfc9485"
+  ],
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Robin van der Vleuten",
+    "email": "robin@webstronauts.com",
+    "url": "https://robinvdvleuten.nl"
+  },
+  "repository": "getquario/treffer",
+  "files": [
+    "lib"
+  ],
+  "type": "module",
+  "module": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "scripts": {
+    "bench": "node --disallow-code-generation-from-strings bench/index.js",
+    "check": "run-s fmt:check lint size test fuzz:regression test:browser",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "fuzz": "npm run fuzz:prepare && run-s fuzz:compile fuzz:match fuzz:structured",
+    "fuzz:compile": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/compile.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/compile fuzz/corpus/compile -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
+    "fuzz:match": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/match.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/match fuzz/corpus/match -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
+    "fuzz:prepare": "node -e \"for (const x of ['compile','match','structured']) require('fs').mkdirSync('.fuzz-corpus/'+x,{recursive:true})\"",
+    "fuzz:regression": "run-s fuzz:regression:compile fuzz:regression:match fuzz:regression:structured",
+    "fuzz:regression:compile": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/compile.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/compile -- -timeout=25 -artifact_prefix=fuzz/",
+    "fuzz:regression:match": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/match.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/match -- -timeout=25 -artifact_prefix=fuzz/",
+    "fuzz:regression:structured": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/structured.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync --mode=regression fuzz/corpus/structured -- -timeout=25 -artifact_prefix=fuzz/",
+    "fuzz:structured": "NODE_OPTIONS=--disallow-code-generation-from-strings jazzer fuzz/structured.fuzz.js -i lib/ --customHooks fuzz/hooks.js --disableBugDetectors='command-injection|path-traversal' --sync .fuzz-corpus/structured fuzz/corpus/structured -- -max_total_time=60 -timeout=25 -use_value_profile=1 -dict=fuzz/treffer.dict -artifact_prefix=fuzz/",
+    "lint": "oxlint --deny-warnings",
+    "size": "size-limit",
+    "test": "run-s test:unit test:types",
+    "test:browser": "playwright install chromium && node test/browser/harness.js",
+    "test:types": "tsc && attw --pack . --profile esm-only",
+    "test:unit": "node --disallow-code-generation-from-strings --test --test-concurrency=1 test/*.test.js"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
+    "@jazzer.js/bug-detectors": "^4.0.0",
+    "@jazzer.js/core": "^4.0.0",
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "npm-run-all": "^4.1.5",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "playwright": "^1.61.1",
+    "size-limit": "^12.1.0",
+    "typescript": "7.0.2"
+  },
+  "size-limit": [
+    {
+      "path": "lib/index.js",
+      "limit": "2.1 kB"
+    }
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  }
 }

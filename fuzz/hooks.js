@@ -1,4 +1,3 @@
-import { getBugDetectorConfiguration } from '@jazzer.js/bug-detectors';
+import { getBugDetectorConfiguration } from "@jazzer.js/bug-detectors";
 
-getBugDetectorConfiguration('prototype-pollution')
-	?.instrumentAssignmentsAndVariableDeclarations();
+getBugDetectorConfiguration("prototype-pollution")?.instrumentAssignmentsAndVariableDeclarations();

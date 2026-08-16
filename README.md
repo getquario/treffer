@@ -13,19 +13,19 @@ A tiny, bounded [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html)
 	</picture>
 </a>
 
-*Treffer* is Dutch for a hit or match. It parses I-Regexp patterns into Thompson NFAs and evaluates all active states together. Matching never backtracks, so patterns such as `(a+)+` have predictable runtime.
+_Treffer_ is Dutch for a hit or match. It parses I-Regexp patterns into Thompson NFAs and evaluates all active states together. Matching never backtracks, so patterns such as `(a+)+` have predictable runtime.
 
 ```js
-import { compile, match, search } from 'treffer';
+import { compile, match, search } from "treffer";
 
-const isbn = compile('[0-9]{13}');
+const isbn = compile("[0-9]{13}");
 
-isbn.match('9780131103627');        // true
-isbn.match('ISBN 9780131103627');   // false
-isbn.search('ISBN 9780131103627');  // true
+isbn.match("9780131103627"); // true
+isbn.match("ISBN 9780131103627"); // false
+isbn.search("ISBN 9780131103627"); // true
 
-match('a|b', 'a');                  // true
-search('\\p{Lu}+', 'price: EUR');   // true
+match("a|b", "a"); // true
+search("\\p{Lu}+", "price: EUR"); // true
 ```
 
 ## API
@@ -38,10 +38,10 @@ Checks and compiles a pattern once. The returned object has two methods:
 - `search(subject)` tests whether any substring matches.
 
 ```js
-const words = compile('[\\p{L}-]+');
+const words = compile("[\\p{L}-]+");
 
-words.match('naïve');       // true
-words.search('42 naïve');   // true
+words.match("naïve"); // true
+words.search("42 naïve"); // true
 ```
 
 ### `match(pattern, subject, options?)`
@@ -68,9 +68,9 @@ JavaScript-only syntax such as `\d`, `\w`, lookarounds, backreferences, and lazy
 RFC 9485 treats `^` and `$` as ordinary characters. Pass `{ anchors: true }` to use them as subject anchors:
 
 ```js
-const line = compile('^item-[0-9]+$', { anchors: true });
-line.search('item-42'); // true
-line.search('x item-42'); // false
+const line = compile("^item-[0-9]+$", { anchors: true });
+line.search("item-42"); // true
+line.search("x item-42"); // false
 ```
 
 ## Errors and limits

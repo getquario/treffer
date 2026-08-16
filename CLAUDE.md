@@ -4,8 +4,9 @@ Tiny, bounded RFC 9485 I-Regexp matcher for JavaScript. Zero runtime dependencie
 
 ## Commands
 
-- `npm run check` — reproduces the complete pull-request quality gate locally: lint, bundle size, unit tests, deterministic fuzz regression, and browser CSP coverage. **There is no build step.**
-- `npm run lint` — oxlint on its default (correctness) ruleset with `--deny-warnings`, so any warning fails. It runs first in `check` because it is the cheapest step.
+- `npm run check` — reproduces the complete pull-request quality gate locally: format, lint, bundle size, unit tests, deterministic fuzz regression, and browser CSP coverage. **There is no build step.**
+- `npm run fmt` — oxfmt, formatting every file it understands: JS, TS, JSON, Markdown and HTML. `npm run fmt:check` is the CI form and runs first in `check`, being the cheapest step.
+- `npm run lint` — oxlint on its default (correctness) ruleset with `--deny-warnings`, so any warning fails.
 - **Non-negotiable: run `npm run check` before declaring any work done.** Passing unit tests alone is not done — a change is complete only when the full gate above is green. Never say "done", close an issue, or hand off without it.
 - `npm test` — `test:unit` (Node's built-in test runner under `--disallow-code-generation-from-strings`, a strict-CSP simulation), then `test:types`: a plain `tsc` that type-checks `lib/` **and** `test/types.check.ts` in one pass, followed by `attw` against a packed tarball to catch module-resolution mistakes the compiler cannot see. Keep this on Node: Bun accepts that V8 flag but does not enforce it.
 - `npm run size` — size-limit bundles and minifies `lib/index.js` itself, then checks it against the budget in `package.json`. It measures what a consumer's bundler would ship rather than a file on disk, so it still catches a dependency accidentally being pulled in.
@@ -32,7 +33,7 @@ The implementation lives in `lib/index.js`, which is also exactly what ships —
 7. Treffer is a checking RFC 9485 implementation. Reject unsupported JavaScript syntax rather than interpreting it.
 8. `^` and `$` are literals in strict mode. Anchor behavior requires `{ anchors: true }`.
 9. Keep zero runtime dependencies and CSP safety.
-10. Size is a soft goal. Never remove a safety check to save bytes, and **never shorten a name to save them either** — a consumer's minifier mangles every binding regardless of how it is spelled here, so short internal names buy nothing. Since `lib/` ships verbatim, those names are what appear in a consumer's stack trace. Object *property* names are the exception: minifiers cannot rename them, so `Matcher.char` and `Nfa.states` do cost real bytes — spend them anyway when they buy clarity, and raise the budget deliberately.
+10. Size is a soft goal. Never remove a safety check to save bytes, and **never shorten a name to save them either** — a consumer's minifier mangles every binding regardless of how it is spelled here, so short internal names buy nothing. Since `lib/` ships verbatim, those names are what appear in a consumer's stack trace. Object _property_ names are the exception: minifiers cannot rename them, so `Matcher.char` and `Nfa.states` do cost real bytes — spend them anyway when they buy clarity, and raise the budget deliberately.
 
 ## Omakase pragmatism
 
@@ -52,7 +53,7 @@ Syntax errors throw `SyntaxError`, invalid API values throw `TypeError`, and res
 
 ## Conventions
 
-- Tabs in JavaScript.
+- **oxfmt owns formatting, on its own defaults** — 2-space indent, double quotes, 100-column width. There is no `.oxfmtrc.json` and adding one should need a reason, not a preference. Indentation, quoting and line breaking are not decisions anyone makes here; run `npm run fmt`. This replaced a hand-maintained terse style, so do not reintroduce manual alignment or single-line blocks — the formatter will undo them.
 - Unit tests use `node:test` and live in `test/*.test.js`; the Playwright CSP test lives in `test/browser/`.
 - New syntax or safety behavior needs unit tests and structured fuzz coverage.
 - Keep the fuzz differential oracle restricted to short patterns and subjects so the native comparison engine cannot become a fuzzing bottleneck.
@@ -62,6 +63,7 @@ Syntax errors throw `SyntaxError`, invalid API values throw `TypeError`, and res
 - The declaration is hand-written in `lib/index.d.ts`, beside the code it describes. It is **not** generated: `tsc` cannot keep `@internal` JSDoc typedefs out of emitted declarations ([TypeScript #38444](https://github.com/microsoft/TypeScript/issues/38444)), so generating would publish the internal AST and NFA types as API. dts-buddy has the same flaw. ESLint and execa hand-write theirs for the same reason.
 - **`checkJs` over `lib/` is what keeps that declaration honest.** `tsconfig.json` type-checks `lib/**/*.js` under full `strict` including `noImplicitAny`. The public types are declared once in `lib/index.d.ts` and pulled into the implementation with `@import`, so a signature that drifts from what ships fails to compile; only internal types (`Node`, `State`, `Frag`, `Matcher`, `Nfa`) are local `@typedef`s. `fault()` and `cap()` take `TrefferErrorCode`, so a code this module throws but the declaration omits fails to compile. Verify with: swap a thrown code for a made-up one and confirm `npm run test:types` fails.
 - `attw` runs with `--profile esm-only`, which skips the `node10` and `node16-cjs` resolution modes — the two this package deliberately does not support. `node16` (ESM) and `bundler` must stay green.
-- **`no-unused-expressions` is suppressed per line, never per glob.** The `cond || bad()` guard idiom trips it ~25 times in `lib/index.js`, each carrying its own `// oxlint-disable-line no-unused-expressions`. Do not "tidy" these into one `.oxlintrc.json` override: the rule staying live in that file is what still catches a genuinely dead statement there, and a glob would silently give that up. Verify by adding `PROP;` next to a suppressed line and confirming `npm run lint` fails.
-- Bindings are named for readers: `chars` not `s`, `pos` not `i`, `states` not `st`, `preds` not `ps`. True loop counters (`j`) stay single letters. Rename with a scope-aware tool, never `sed` — a bare `s` occurs inside strings, comments and unrelated scopes. Watch shorthand properties especially: renaming the binding in `{ c }` silently renames the *property* too, which is how `Matcher.c` became `Matcher.char`.
+- **`no-unused-expressions` is suppressed per line, never per glob.** The `cond || bad()` guard idiom trips it ~25 times in `lib/index.js`, each carrying its own suppression. Do not "tidy" these into one `.oxlintrc.json` override: the rule staying live in that file is what still catches a genuinely dead statement there, and a glob would silently give that up. Verify by adding `PROP;` next to a suppressed line and confirming `npm run lint` fails.
+- **Suppressions use `oxlint-disable-next-line`, never the trailing `-line` form.** A trailing comment is anchored to a physical line, and oxfmt moves lines: when the formatter first ran, 6 of the 25 trailing suppressions stopped covering their expression and `npm run lint` failed. Two more needed the comment placed _inside_ the block, directly above the guarded expression, because the enclosing statement was split. If a suppression ever stops working after a formatting change, that is the cause.
+- Bindings are named for readers: `chars` not `s`, `pos` not `i`, `states` not `st`, `preds` not `ps`. True loop counters (`j`) stay single letters. Rename with a scope-aware tool, never `sed` — a bare `s` occurs inside strings, comments and unrelated scopes. Watch shorthand properties especially: renaming the binding in `{ c }` silently renames the _property_ too, which is how `Matcher.c` became `Matcher.char`.
 - `.fuzz-corpus/` and generated fuzz artifacts are not committed.
