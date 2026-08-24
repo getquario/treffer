@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Roots reached by `node <path>` and `jazzer <path>` from npm scripts rather
+  // than by import, so nothing in the graph points at them: the benchmark
+  // harness (`npm run bench`), and the fuzz targets plus the `--customHooks`
+  // module (`npm run fuzz`) -- the hooks module being the only importer of
+  // @jazzer.js/bug-detectors, which is what keeps that devDependency visible
+  // with no `ignoreDependencies` entry. Named by kind rather than as `fuzz/*.js`
+  // so a shared helper added later lands outside `entry`, where knip still
+  // checks its exports.
+  "entry": ["bench/index.js", "fuzz/*.fuzz.js", "fuzz/hooks.js"],
+  // The browser page imports what the harness serves it, by served path rather
+  // than by specifier -- no file exists at this path on disk.
+  "ignoreUnresolved": ["/lib/index.js"],
+}
