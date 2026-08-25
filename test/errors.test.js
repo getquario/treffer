@@ -41,6 +41,11 @@ test("invalid I-Regexp syntax throws SyntaxError", () => {
     "a{2,1}",
     "a{2",
     "\ud800",
+    "\\p{Foo}",
+    "\\p{L",
+    "\\p{}",
+    "\\",
+    "\\q",
   ]) {
     check(() => compile(pattern), SyntaxError, "TREFFER_SYNTAX");
   }
@@ -93,6 +98,11 @@ test("subject validation and work limits throw", () => {
   assert.throws(
     () => re.match("\ud800"),
     (e) => e instanceof TypeError && isDiagnostic(e) && !Object.hasOwn(e, "code"),
+  );
+  assert.throws(
+    () => re.match("\udc00"),
+    (e) => e instanceof TypeError && isDiagnostic(e) && !Object.hasOwn(e, "code"),
+    "lone low surrogate",
   );
   check(
     () => search("", "a".repeat(1_000_001)),

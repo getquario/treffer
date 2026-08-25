@@ -64,6 +64,8 @@ test("match and search differ only in anchoring", () => {
 test("subject anchors are an explicit extension", () => {
   assert.ok(match("^a$", "^a$"), "strict RFC mode treats anchors as literals");
   notOk(match("^a$", "a"), "strict mode does not anchor");
+  assert.ok(compile("a", {}).match("a"), "empty options leave anchors off");
+  assert.ok(compile("a", { anchors: undefined }).match("a"), "missing anchors is false");
 
   const re = compile("^a+$", { anchors: true });
   assert.ok(re.match("aaa"));
