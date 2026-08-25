@@ -2,18 +2,32 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { compile } from "../lib/index.js";
 
+let takeEscape = (pattern, i, c) => {
+  if (c !== "\\") return;
+  return c + pattern[i + 1];
+};
+
+let inClass = (c, cls) => {
+  if (c === "[") return true;
+  if (c === "]") return false;
+  return cls;
+};
+
+let mapChar = (c, cls) => (c === "." && !cls ? "[^\\n\\r]" : c);
+
 let native = (pattern, full) => {
   let out = "",
     cls = false;
   for (let i = 0; i < pattern.length; i++) {
     const c = pattern[i];
-    if (c === "\\") {
-      out += c + pattern[++i];
+    const escaped = takeEscape(pattern, i, c);
+    if (escaped) {
+      out += escaped;
+      i++;
       continue;
     }
-    if (c === "[") cls = true;
-    else if (c === "]") cls = false;
-    out += c === "." && !cls ? "[^\\n\\r]" : c;
+    cls = inClass(c, cls);
+    out += mapChar(c, cls);
   }
   return new RegExp(full ? "^(?:" + out + ")$" : out, "u");
 };
