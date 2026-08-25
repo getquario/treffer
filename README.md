@@ -15,6 +15,16 @@ A tiny, bounded [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html)
 
 _Treffer_ is Dutch for a hit or match. It parses I-Regexp patterns into Thompson NFAs and evaluates all active states together. Matching never backtracks, so patterns such as `(a+)+` have predictable runtime.
 
+## Install
+
+```bash
+npm install treffer
+```
+
+Node.js 22 or newer, ESM only.
+
+## Usage
+
 ```js
 import { compile, match, search } from "treffer";
 
@@ -105,7 +115,20 @@ Treffer parses patterns into data structures and closures. It generates no JavaS
 
 ## Environments
 
-Node.js 22 and newer are supported through the ESM and CommonJS builds. Browser use is supported through a standards-based ESM bundler in environments supporting ES2024. Direct `<script>` globals and UMD builds are not provided.
+Node.js 22 and newer, ESM only. Browser use is supported through a standards-based ESM bundler in environments supporting ES2024. Direct `<script>` globals, UMD, and CommonJS builds are not provided.
+
+Shipping CommonJS alongside ESM would put two copies of the core in any process that mixed `require` and `import`. Each copy would have its own diagnostic identity, so `isDiagnostic` would return `false` across the seam.
+
+## Contributing
+
+```bash
+git clone https://github.com/getquario/treffer.git
+cd treffer
+npm install
+npm run check
+```
+
+`npm run check` is the local gate. Conventions for this repo live in [AGENTS.md](AGENTS.md).
 
 ## License
 
