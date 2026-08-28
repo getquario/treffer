@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compile, isDiagnostic, match, search } from "../lib/index.js";
+import { compile, isDiagnostic, match, relocate, search } from "../lib/index.js";
 
 let check = (run, Type, code, limit, actual) =>
   assert.throws(run, (e) => {
@@ -171,4 +171,115 @@ test("captured provenance operations resist prototype replacement", () => {
     WeakSet.prototype.add = add;
     WeakSet.prototype.has = has;
   }
+});
+
+let caught = (fn) => {
+  try {
+    fn();
+  } catch (e) {
+    return e;
+  }
+  assert.fail("expected an error");
+};
+
+test("syntax faults point at the offending code point", () => {
+  let span = (pattern) => {
+    const e = caught(() => compile(pattern));
+    assert.strictEqual(e.code, "TREFFER_SYNTAX");
+    return [e.start, e.end];
+  };
+
+  assert.deepStrictEqual(span("a)"), [1, 2], "trailing garbage is not consumed yet");
+  assert.deepStrictEqual(span("(a"), [2, 2], "end of pattern is an empty span at the end");
+  assert.deepStrictEqual(span("a{2,1}"), [1, 6], "an impossible brace spans the whole quantifier");
+  assert.deepStrictEqual(
+    span("a{,2}"),
+    [2, 3],
+    "a missing bound points at what stands where the digit belongs",
+  );
+  assert.deepStrictEqual(span("[z-a]"), [3, 4], "a reversed range points at its high endpoint");
+  assert.deepStrictEqual(span("a\\q"), [2, 3], "an unknown escape points at the escaped char");
+  assert.deepStrictEqual(span("\\p{Foo}"), [3, 6], "an unknown property points at its name");
+  assert.deepStrictEqual(span("ab\ud800"), [2, 3], "a lone surrogate points at itself");
+  assert.deepStrictEqual(span("😀)"), [2, 3], "spans are UTF-16 offsets, not code points");
+});
+
+test("resource limits carry no span", () => {
+  const e = caught(() => compile("a{1025}"));
+  assert.strictEqual(e.code, "TREFFER_MAX_REPETITIONS");
+  assert.ok(!Object.hasOwn(e, "start"));
+  assert.ok(!Object.hasOwn(e, "end"));
+});
+
+test("relocate returns an authenticated copy in the embedder's coordinates", () => {
+  const original = caught(() => compile("a)"));
+  const moved = relocate(original, { prefix: "$.a[?match(@.b, 'a)')]: ", offset: 14 });
+
+  assert.ok(moved instanceof SyntaxError);
+  assert.strictEqual(moved.message, "$.a[?match(@.b, 'a)')]: " + original.message);
+  assert.strictEqual(moved.code, original.code);
+  assert.deepStrictEqual([moved.start, moved.end], [15, 16]);
+  assert.ok(isDiagnostic(moved));
+  assert.deepStrictEqual([original.start, original.end], [1, 2], "the original is left untouched");
+});
+
+test("relocate leaves a span-less diagnostic span-less", () => {
+  const original = caught(() => compile("a{1025}"));
+  const moved = relocate(original, { prefix: "pattern: ", offset: 9 });
+
+  assert.ok(moved instanceof RangeError);
+  assert.strictEqual(moved.code, "TREFFER_MAX_REPETITIONS");
+  assert.strictEqual(moved.limit, 1024);
+  assert.strictEqual(moved.actual, 1025);
+  assert.ok(!Object.hasOwn(moved, "start"));
+  assert.ok(isDiagnostic(moved));
+});
+
+test("relocate defaults to no prefix and no shift", () => {
+  const original = caught(() => compile("a)"));
+  const moved = relocate(original);
+
+  assert.strictEqual(moved.message, original.message);
+  assert.deepStrictEqual([moved.start, moved.end], [original.start, original.end]);
+  assert.ok(isDiagnostic(moved));
+});
+
+test("relocate refuses anything that is not a Treffer diagnostic", () => {
+  const spoof = Object.assign(SyntaxError("spoof"), { code: "TREFFER_SYNTAX", start: 0, end: 1 });
+  for (const value of [null, undefined, 1, "TREFFER_SYNTAX", {}, SyntaxError("host"), spoof])
+    assert.throws(() => relocate(value), TypeError);
+});
+
+test("relocate does not mint a diagnostic through a replaced constructor", () => {
+  const d = caught(() => compile("a)"));
+  const real = SyntaxError.prototype.constructor;
+  try {
+    SyntaxError.prototype.constructor = function () {
+      return { pwned: true };
+    };
+    const moved = relocate(d, { prefix: "x: " });
+    assert.ok(moved instanceof SyntaxError, "the class comes from a captured table");
+    assert.ok(!Object.hasOwn(moved, "pwned"));
+    assert.ok(isDiagnostic(moved));
+  } finally {
+    SyntaxError.prototype.constructor = real;
+  }
+});
+
+test("relocate degrades to a plain Error when the original's prototype was replaced", () => {
+  const d = caught(() => compile("a)"));
+  Object.setPrototypeOf(d, Object.create(null));
+
+  const moved = relocate(d, { prefix: "x: " });
+  assert.ok(moved instanceof Error, "an unrecognized class falls back to Error");
+  assert.ok(isDiagnostic(moved), "and is still authenticated");
+});
+
+test("relocate keeps an API type error a TypeError", () => {
+  const d = caught(() => compile(1));
+  const moved = relocate(d, { prefix: "pattern: " });
+
+  assert.ok(moved instanceof TypeError);
+  assert.ok(isDiagnostic(moved));
+  assert.ok(!Object.hasOwn(moved, "code"), "API type errors carry no code");
 });

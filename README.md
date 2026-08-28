@@ -88,14 +88,36 @@ line.search("x item-42"); // false
 Errors produced by Treffer keep their `SyntaxError`, `TypeError`, or `RangeError` class. Syntax and resource errors expose machine-readable properties:
 
 - `code`: a stable category;
+- `start`: the zero-based offset into the pattern, for syntax errors;
+- `end`: the exclusive offset into the pattern, for syntax errors;
 - `limit`: the fixed resource limit, for resource errors;
 - `actual`: the observed value, when it can be determined without weakening early rejection.
+
+Spans are UTF-16 string offsets into the pattern you passed in, so `pattern.slice(start, end)` is the offending text. They cover the character that made the pattern invalid — the whole quantifier for an impossible bound like `a{2,1}`, the property name for an unknown `\\p{...}`, and an empty span at the end of the pattern when it ends early. A resource limit is not a position in the pattern, so those diagnostics carry `limit` and `actual` instead and have no span.
 
 The codes are `TREFFER_SYNTAX`, `TREFFER_MAX_PATTERN_SCALARS`, `TREFFER_MAX_GROUP_DEPTH`, `TREFFER_MAX_QUANTIFIER_DIGITS`, `TREFFER_MAX_REPETITIONS`, `TREFFER_MAX_NFA_STATES`, `TREFFER_MAX_SUBJECT_SCALARS`, and `TREFFER_MAX_TRANSITIONS`. API `TypeError`s have no code.
 
 Errors thrown by caller-provided option accessors are host errors. Treffer passes them through unchanged and does not attach diagnostic fields.
 
-Use `isDiagnostic(error)` when a host needs to distinguish those errors. It returns `true` only for errors created by the same Treffer module instance. Copying documented `code`, `limit`, and `actual` properties onto another error does not authenticate it. A diagnostic from another installed copy or module instance also returns `false`.
+Use `isDiagnostic(error)` when a host needs to distinguish those errors. It returns `true` only for errors created by the same Treffer module instance. Copying documented `code`, `start`, `end`, `limit`, and `actual` properties onto another error does not authenticate it. A diagnostic from another installed copy or module instance also returns `false`.
+
+### Relocating a diagnostic
+
+An embedder that compiles patterns out of a larger document — a filter selector in a JSONPath query, a validation rule in a schema — reports the fault in its own coordinates, not the pattern's. `relocate(diagnostic, { prefix, offset })` returns the copy to re-throw:
+
+```js
+import { compile, isDiagnostic, relocate } from "treffer";
+
+try {
+  compile(pattern);
+} catch (error) {
+  if (!isDiagnostic(error)) throw error;
+  // where the pattern literal starts inside the surrounding query
+  throw relocate(error, { prefix: "$.a[?match(@.b, ...)]: ", offset: 16 });
+}
+```
+
+The copy keeps the original's class, prepends `prefix` to the message verbatim, shifts `start` and `end` by `offset` when there is a span, and carries every other field across. It is registered exactly as the original was, so it passes `isDiagnostic`. The original is left untouched. Relocation belongs here rather than in the embedder because authentication is by identity: a copy an embedder builds itself cannot be authenticated, and a field added to a diagnostic here would be a field the embedder's copy silently drops. Passing anything but a Treffer diagnostic throws a `TypeError`.
 
 The fixed safety limits are:
 
