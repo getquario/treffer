@@ -1,6 +1,6 @@
 {
   "name": "treffer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tiny, bounded RFC 9485 I-Regexp matcher backed by a Thompson NFA.",
   "keywords": [
     "iregexp",
