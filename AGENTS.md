@@ -6,7 +6,7 @@ Work is done when `npm run check` is green. Scripts live in `package.json`. Run 
 
 ## Architecture
 
-`parse()` checks RFC 9485 syntax and produces a small internal tree. `build()` compiles that tree to a Thompson NFA. `run()` simulates active states as sets and computes epsilon closures with visited-state tracking.
+`parse()` checks RFC 9485 syntax and produces a small internal tree. `compile()` lowers that tree to a Thompson NFA. `run()` simulates active states as sets and computes epsilon closures with visited-state tracking.
 
 `compile(pattern)` returns `{ match(subject), search(subject) }`. The one-shot exports compile and run in one call. Strict RFC behavior is the default; `{ anchors: true }` enables `^` and `$`.
 
