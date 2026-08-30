@@ -1,6 +1,7 @@
 import {
   compile,
   isDiagnostic,
+  relocate,
   match,
   search,
   type Treffer,
@@ -37,6 +38,12 @@ try {
     const limit: number | undefined = diagnostic.limit;
     const actual: number | undefined = diagnostic.actual;
     void [code, limit, actual];
+
+    // `offset` shifts the span; `span` replaces it, for an embedder whose text
+    // reached the pattern through a decode.
+    const shifted: TrefferDiagnostic = relocate(error, { prefix: "q: ", offset: 16 });
+    const replaced: TrefferDiagnostic = relocate(error, { span: [16, 24] });
+    void [shifted, replaced];
 
     // @ts-expect-error diagnostic metadata is readonly
     diagnostic.limit = 1;

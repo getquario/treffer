@@ -1,3 +1,5 @@
+import type { Diagnostic, Relocation } from "waarmerk";
+
 export interface TrefferOptions {
   /**
    * Treat `^` and `$` as subject anchors.
@@ -17,31 +19,31 @@ export type TrefferErrorCode =
   | "TREFFER_MAX_SUBJECT_SCALARS"
   | "TREFFER_MAX_TRANSITIONS";
 
-export interface TrefferDiagnostic extends Error {
-  readonly code?: TrefferErrorCode;
-  readonly limit?: number;
-  readonly actual?: number;
-  /** Zero-based offset into the pattern. Syntax diagnostics only. */
-  readonly start?: number;
-  /** Exclusive offset into the pattern. Syntax diagnostics only. */
-  readonly end?: number;
-}
+/**
+ * The fields and their meanings are waarmerk's; this names the code union they
+ * are checked against. `start`/`end` are zero-based and exclusive offsets into
+ * the pattern, on syntax diagnostics only; `limit`/`actual` are the resource
+ * ones, which have no span.
+ */
+export interface TrefferDiagnostic extends Diagnostic<TrefferErrorCode> {}
 
 /** Test whether an error was created by this Treffer module instance. */
 export function isDiagnostic(error: unknown): error is TrefferDiagnostic;
 
 /**
  * Copy a diagnostic into an embedder's coordinates: `prefix` is prepended to
- * the message verbatim, `offset` shifts the span when there is one, every
- * other field is carried over, and the copy is authenticated exactly as the
- * original was.
+ * the message verbatim, the span is moved when there is one, every other field
+ * is carried over, and the copy is authenticated exactly as the original was.
+ *
+ * `offset` shifts the span, for an embedder that handed over a verbatim slice
+ * of its own text. `span` replaces it, for one whose text reached the pattern
+ * through a decode — a pattern read out of a JSON string literal, where an
+ * escape makes every later offset slide — and so has no offset to shift.
+ * `span` wins when both are given.
  *
  * @throws {TypeError} When `diag` is not a diagnostic from this instance.
  */
-export function relocate(
-  diag: unknown,
-  opts?: { prefix?: string; offset?: number },
-): TrefferDiagnostic;
+export function relocate(diag: unknown, opts?: Relocation): TrefferDiagnostic;
 
 export interface Treffer {
   /** Test whether the pattern matches the whole subject. */

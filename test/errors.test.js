@@ -283,3 +283,25 @@ test("relocate keeps an API type error a TypeError", () => {
   assert.ok(isDiagnostic(moved));
   assert.ok(!Object.hasOwn(moved, "code"), "API type errors carry no code");
 });
+
+test("a resource limit names the budget and the number it passed", () => {
+  // The code is the contract; the message is for a human reading a stack, and
+  // saying which budget and how big it was beats a single fixed sentence.
+  for (const [pattern, message] of [
+    ["a{1025}", "repetitions limit of 1024 exceeded"],
+    ["a{0001024}", "quantifier digits limit of 6 exceeded"],
+    ["(".repeat(65) + "a" + ")".repeat(65), "group depth limit of 64 exceeded"],
+    ["a".repeat(4096), "NFA states limit of 4096 exceeded"],
+    ["[" + "a".repeat(4095) + "]", "pattern scalars limit of 4096 exceeded"],
+  ])
+    assert.strictEqual(caught(() => compile(pattern)).message, message);
+});
+
+test("relocate names this package when it refuses, not its dependency", () => {
+  // The message is documented here, and the guard has to stay here to keep it:
+  // waarmerk refuses in its own name, which is a package the caller never chose.
+  assert.throws(
+    () => relocate(SyntaxError("from somewhere else")),
+    (e) => e instanceof TypeError && e.message === "Not a diagnostic from Treffer",
+  );
+});

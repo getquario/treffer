@@ -1,6 +1,6 @@
 # treffer
 
-A tiny, bounded [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) matcher for JavaScript. **~2KB min+gzip, zero runtime dependencies.**
+A tiny, bounded [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) matcher for JavaScript. **~2KB min+gzip, one tiny runtime dependency.**
 
 [![NPM version](https://img.shields.io/npm/v/treffer.svg)](https://www.npmjs.com/package/treffer)
 [![Build Status](https://github.com/getquario/treffer/actions/workflows/test.yml/badge.svg)](https://github.com/getquario/treffer/actions/workflows/test.yml)
@@ -93,7 +93,7 @@ Errors produced by Treffer keep their `SyntaxError`, `TypeError`, or `RangeError
 - `limit`: the fixed resource limit, for resource errors;
 - `actual`: the observed value, when it can be determined without weakening early rejection.
 
-Spans are UTF-16 string offsets into the pattern you passed in, so `pattern.slice(start, end)` is the offending text. They cover the character that made the pattern invalid — the whole quantifier for an impossible bound like `a{2,1}`, the property name for an unknown `\\p{...}`, and an empty span at the end of the pattern when it ends early. A resource limit is not a position in the pattern, so those diagnostics carry `limit` and `actual` instead and have no span.
+Spans are UTF-16 string offsets into the pattern you passed in, so `pattern.slice(start, end)` is the offending text. They cover the character that made the pattern invalid — the whole quantifier for an impossible bound like `a{2,1}`, the property name for an unknown `\\p{...}`, and an empty span at the end of the pattern when it ends early. A resource limit is not a position in the pattern, so those diagnostics carry `limit` and `actual` instead and have no span. Their message names the budget and the number it passed — `group depth limit of 64 exceeded`. Branch on `code`; the message is for a human reading a stack.
 
 The codes are `TREFFER_SYNTAX`, `TREFFER_MAX_PATTERN_SCALARS`, `TREFFER_MAX_GROUP_DEPTH`, `TREFFER_MAX_QUANTIFIER_DIGITS`, `TREFFER_MAX_REPETITIONS`, `TREFFER_MAX_NFA_STATES`, `TREFFER_MAX_SUBJECT_SCALARS`, and `TREFFER_MAX_TRANSITIONS`. API `TypeError`s have no code.
 
@@ -117,7 +117,17 @@ try {
 }
 ```
 
-The copy keeps the original's class, prepends `prefix` to the message verbatim, shifts `start` and `end` by `offset` when there is a span, and carries every other field across. It is registered exactly as the original was, so it passes `isDiagnostic`. The original is left untouched. Relocation belongs here rather than in the embedder because authentication is by identity: a copy an embedder builds itself cannot be authenticated, and a field added to a diagnostic here would be a field the embedder's copy silently drops. Passing anything but a Treffer diagnostic throws a `TypeError`.
+The copy keeps the original's class, prepends `prefix` to the message verbatim, moves the span when there is one, and carries every other field across. It is registered exactly as the original was, so it passes `isDiagnostic`. The original is left untouched. Relocation belongs here rather than in the embedder because authentication is by identity: a copy an embedder builds itself cannot be authenticated, and a field added to a diagnostic here would be a field the embedder's copy silently drops. Passing anything but a Treffer diagnostic throws a `TypeError`.
+
+`offset` is right whenever the pattern was a verbatim slice of your text. It is wrong when your text was decoded first — a pattern read out of a JSON string literal, where `\\d` is three characters standing for two and every later offset slides. Pass `span` instead and name the region the pattern came from:
+
+```js
+// The pattern reached Treffer after JSON unescaping, so no shift can reach the
+// offending character. Point at the literal that carried it.
+throw relocate(error, { prefix: "$.a[?match(@.b, ...)]: ", span: [16, 24] });
+```
+
+`span` replaces the span outright and wins when both are given. Neither option adds a span to a diagnostic that had none.
 
 The fixed safety limits are:
 
