@@ -204,6 +204,7 @@ If you compile patterns out of a larger document — a filter selector in a JSON
 git clone https://github.com/getquario/treffer.git
 cd treffer
 npm install
+git config core.hooksPath .githooks   # enable the commit-msg hook
 npm run check
 ```
 
