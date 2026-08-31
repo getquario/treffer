@@ -18,7 +18,8 @@
   },
   "repository": "getquario/treffer",
   "files": [
-    "lib"
+    "lib",
+    "EMBEDDING.md"
   ],
   "type": "module",
   "module": "lib/index.js",

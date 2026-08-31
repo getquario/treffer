@@ -2,7 +2,7 @@
 
 Tiny, bounded RFC 9485 I-Regexp matcher for JavaScript. Plain JS + JSDoc, one runtime dependency. `lib/index.js` is the implementation and the package.
 
-Work is done when `npm run check` is green. Scripts live in `package.json`. Run them on Node: Bun accepts `--disallow-code-generation-from-strings` but does not enforce it. A single suite is `node --disallow-code-generation-from-strings --test test/match.test.js`. Public syntax, API, and the numeric limits live in `README.md`.
+Work is done when `npm run check` is green. Scripts live in `package.json`. Run them on Node: Bun accepts `--disallow-code-generation-from-strings` but does not enforce it. A single suite is `node --disallow-code-generation-from-strings --test test/match.test.js`. Public syntax, API, and the numeric limits live in `README.md`; the host-facing surface (diagnostic identity, `relocate`, the `span` form) lives in `EMBEDDING.md`.
 
 ## Architecture
 
