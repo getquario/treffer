@@ -1,23 +1,27 @@
 # treffer
 
-A tiny, bounded [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html) matcher for JavaScript. **~2KB min+gzip, one tiny runtime dependency.**
+A tiny regular-expression matcher for JavaScript that runs patterns you didn't write — a user's search filter, a rule in a config file, a `pattern` in a JSON Schema — without the two things that make that dangerous with `RegExp`: catastrophic backtracking, and a syntax that means different things in different languages.
 
-[![NPM version](https://img.shields.io/npm/v/treffer.svg)](https://www.npmjs.com/package/treffer)
-[![Build Status](https://github.com/getquario/treffer/actions/workflows/test.yml/badge.svg)](https://github.com/getquario/treffer/actions/workflows/test.yml)
-[![NPM downloads](https://img.shields.io/npm/dm/treffer.svg)](https://www.npmjs.com/package/treffer)
-[![Apache-2.0 license](https://img.shields.io/github/license/getquario/treffer.svg)](https://github.com/getquario/treffer/blob/main/LICENSE)
+Patterns compile to a Thompson NFA, so every active state advances together and there is nothing to backtrack into. The syntax is [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html), the interoperable subset JSONPath and JSON Schema build on. _Treffer_ is Dutch for a hit or a match.
 
-<a href="https://webstronauts.com?utm_source=github&utm_medium=readme&utm_campaign=treffer">
-	<picture>
-		<img src="https://webstronauts.com/images/sponsored-by.svg" alt="Sponsored by The Webstronauts" width="200" height="65">
-	</picture>
-</a>
+- **No catastrophic backtracking.** The classic `(a+)+b` against 28 `a`s takes **0.02 ms** here and **4.9 seconds** with `RegExp` on the same machine — a linear pass instead of millions of explored paths.
+- **Bounded everywhere else too.** Pattern size, nesting, NFA states, and matching work all have [fixed limits](#limits), so a hostile pattern throws a `RangeError` instead of wedging the process.
+- **Portable by construction.** I-Regexp is deliberately smaller than JavaScript's syntax — no `\d`, no lookarounds, no backreferences, no lazy quantifiers. What you gain is that a pattern means the same thing here, in a Python validator, and in a Go service.
+- **Tiny.** 2.7 kB minified and brotlied, including its one dependency.
+- **CSP-safe.** No `eval`, no `new Function`. The suite runs on `node --disallow-code-generation-from-strings`, which fails the same constructs a strict CSP does.
+- **Hardened.** 28 tests at 100% branch coverage, plus three fuzz targets.
 
-_Treffer_ is Dutch for a hit or a match. It runs regular expressions that come from somewhere you don't control — a user's search filter, a rule in a config file, a `pattern` in a schema — without the two things that make that dangerous with `RegExp`: catastrophic backtracking, and a syntax that means different things in different languages.
+```js
+import { compile } from "treffer";
 
-Patterns compile to a Thompson NFA and every active state advances together. There is no backtracking, so `(a+)+b` against a string of 28 `a`s finishes in a single linear pass, where a backtracking engine explores millions of paths before giving up. Every stage is bounded besides — pattern size, nesting, states, and matching work all have [fixed limits](#limits) that turn a hostile pattern into a thrown error rather than a wedged process.
+const isbn = compile("[0-9]{13}");
 
-The syntax is [RFC 9485 I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html), the interoperable subset that JSONPath and JSON Schema build on. It is deliberately smaller than JavaScript's: no `\d`, no lookarounds, no backreferences, no lazy quantifiers. What you gain is that a pattern means the same thing here, in a Python validator, and in a Go service.
+isbn.match("9780131103627"); //=> true   — match() is anchored to the whole subject
+isbn.match("ISBN 9780131103627"); //=> false
+isbn.search("ISBN 9780131103627"); //=> true   — search() looks for a substring
+```
+
+<img src="https://getquario.com/favicon.svg" alt="Quario logo" width="16" height="16" /> <b>treffer</b> is built by the team behind <b><a href="https://getquario.com?utm_source=github&utm_medium=readme&utm_campaign=treffer">Quario</a></b>, a declarative reporting engine for JavaScript that renders JSON report definitions to <b>HTML, PDF, workbooks, and Word</b> — without <code>eval</code>.
 
 ## Contents
 
