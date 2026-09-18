@@ -40,7 +40,6 @@ Size is a soft goal (budget in `package.json`). Name bindings for readers; a con
 Omakase: one obvious path over knobs. Test the guarantee a user relies on. Add complexity when concrete pressure shows up.
 
 - oxfmt owns formatting on its defaults. `npm run fmt`.
-- Comments only where the code cannot: safety rationale, non-obvious tricks.
 - Bindings named for readers (`chars`, `pos`, `states`, `preds`). True loop counters (`j`) stay single letters. Rename with a scope-aware tool: a bare `s` also lives in strings and unrelated scopes, and `{ c }` shorthand is how `Matcher.c` became `Matcher.char`.
 - Tests are `node:test` in `test/*.test.js` (`match`, `errors`, `safety`, `differential`), run against `lib/`. New syntax or a new guard belongs in the matching suite and in `fuzz/structured.fuzz.js`. Keep the fuzz differential oracle on short patterns and subjects so the native comparison engine cannot become a bottleneck. `.fuzz-corpus/` and generated artifacts stay uncommitted.
 - ESM only. Two module formats would split the diagnostics WeakMap across a `require` / `import` seam.
@@ -50,3 +49,14 @@ Omakase: one obvious path over knobs. Test the guarantee a user relies on. Add c
 - `oxlint-tsgolint` is the binary that runs the type-aware rules; without it they drop silently.
 - `test/types.check.ts` ends scopes with `void [...]` so type-only bindings stay live under `no-unused-vars`.
 - Fallow defaults are the gate. Split and table-drive until shipped functions sit under them; leave `maxCognitive` and `maxCrap` alone. With no coverage file, estimated CRAP wants cyclomatic below 5. Duplicated helpers in `fuzz/` get exported. A second name in `ignoreDependencies` means a real graph edge is missing.
+
+## Code comments
+
+A comment carries a _why_ the code cannot: a constraint, a deliberate deviation, a gotcha, a workaround. The code already shows the _how_, so the default is no comment.
+
+- **Write for a reader who sees the file fresh.** The comment describes the code as it stands. What changed, and why it changed, goes in the commit message.
+- **Keep the one fact a reader needs at that line.** An invariant the code cannot state ("the timeout stays below the poll interval; the host kills longer waits") or a sync obligation with another file ("mirror the list in `lib/index.d.ts`"). A comment that only restates a decision the code already reflects is deleted, even one that points at a doc.
+- **The comment stands with every link removed.** Encode the substance; a link is a trailing breadcrumb, never the substance. Point at a maintained doc at a stable path (an ADR, `CONTEXT.md`, a README); a spec section number or a design doc is a point-in-time artifact that rots. When the why is a system-level narrative, it lives in that doc in full, and the comment keeps only the local detail.
+- **Razor every comment you keep.** "Carries a real why" and "worded minimally" are separate checks. Cut the mechanism the code shows, where the value is consumed, the consequence of the consequence, the justification of the justification. A five-line block is suspect on sight; the razored answer is sometimes zero lines.
+- **A public export gets a one-line summary.** A single clear line inside a body gets nothing.
+- **A TODO is a marker.** It needs no issue ID, and it never stands in for work that is in scope.
