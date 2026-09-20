@@ -32,9 +32,11 @@
   },
   "scripts": {
     "bench": "node --disallow-code-generation-from-strings bench/index.js",
-    "check": "run-s fmt:check lint fallow size test fuzz:regression test:browser",
+    "check": "run-s fmt:check lint fallow:lint size test fallow:health fuzz:regression test:browser",
     "commitlint": "commitlint",
-    "fallow": "fallow",
+    "fallow": "run-s fallow:lint fallow:health",
+    "fallow:health": "fallow health --coverage coverage/coverage-final.json",
+    "fallow:lint": "fallow dead-code && fallow dupes",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "fuzz": "npm run fuzz:prepare && run-s fuzz:compile fuzz:match fuzz:structured",
@@ -51,7 +53,7 @@
     "test": "run-s test:unit test:types",
     "test:browser": "playwright install chromium && node test/browser/harness.js",
     "test:types": "tsc && attw --pack . --profile esm-only",
-    "test:unit": "c8 --100 --src lib/ node --disallow-code-generation-from-strings --test --test-concurrency=1 test/*.test.js"
+    "test:unit": "c8 --100 --src lib/ --reporter=text --reporter=json node --disallow-code-generation-from-strings --test --test-concurrency=1 test/*.test.js"
   },
   "dependencies": {
     "waarmerk": "^0.1.0"
