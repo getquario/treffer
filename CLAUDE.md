@@ -21,7 +21,7 @@ Work is done when `npm run check` is green. Scripts live in `package.json`. Run 
 - `^` and `$` are literals in strict mode. Anchor behavior requires `{ anchors: true }`.
 - Compose closures that already exist in the shipped source. Source-scan tests grep `lib/` for `\beval\b`, `Function(`, and `new Function`, so comments in `lib/` have to avoid those spellings. The suite runs under `--disallow-code-generation-from-strings`.
 
-Size is a soft goal (budget in `package.json`). Name bindings for readers; a consumer minifier mangles them anyway, and `lib/` ships verbatim so those names show up in stack traces. Property names do not mangle (`Matcher.char`, `Nfa.states`): spend them when they buy clarity, and raise the budget on purpose. Keep the limit and the passing test; then check `npm run size`.
+Size is a soft goal (budget in `package.json`). Name bindings for readers; a consumer minifier mangles them anyway, and `lib/` ships verbatim so those names show up in stack traces. Property names do not mangle (the compiled matcher's `match` / `search`): spend them when they buy clarity, and raise the budget on purpose. Internal nodes travel as positional tuples for the same reason. Keep the limit and the passing test; then check `npm run size`.
 
 ## Semantics
 
@@ -31,7 +31,7 @@ Size is a soft goal (budget in `package.json`). Name bindings for readers; a con
 - Strict mode treats `^` and `$` as literals. `{ anchors: true }` is the CTS-compatible extension padvinder needs.
 - Resource-limit failures are `RangeError` with a `TrefferErrorCode`; they are not silent no-matches at this layer. Callers such as padvinder convert them to false.
 - Diagnostics are minted, authenticated and relocated through [waarmerk](https://github.com/getquario/waarmerk). padvinder shares it; xprsn and sjabloon still hand-roll their own copies and are being moved over. `store()` at module load, `mint`/`capped` to throw, `relocate` re-exported with this module's store applied. Do not hand-roll a second copy of that machinery here — it drifted four ways before it was extracted.
-- `BUDGETS` names each resource budget for its message, keyed by the `TREFFER_MAX_*` half of `TrefferErrorCode`. Add to both when you add a budget. The code is the contract; the message is not.
+- `budgetName` spells a resource budget's message from the `TREFFER_MAX_*` half of its `TrefferErrorCode`, so a new budget needs no second table. It runs behind `within`'s `||`, on the fault path only. The code is the contract; the message is not.
 - `relocate` takes `span` as well as `offset`. `offset` shifts, for an embedder holding a verbatim slice; `span` replaces, for one whose text reached the pattern through a decode.
 - `test/browser/harness.js` serves `lib/` **verbatim**. Bare specifiers are resolved by an import map the page declares, whose sha256 is what lets it run under a policy that forbids inline script; the harness reads that map out of the page rather than restating it. The hash makes the policy follow the page rather than stand apart from it: whatever the map declares is authorised by construction, which is the point — the two cannot disagree — but it is not an independent check on the map's contents. Never rewrite the source on the way out — this suite proves the published file runs under a strict CSP, and a rewritten copy would prove it of something nobody installs. A check in the harness fetches every served module back — dependencies included — and fails if any differs from its source on disk. Add a dependency to the map and to the route table, resolving it through `import.meta.resolve` rather than a hardcoded path.
 
@@ -40,7 +40,7 @@ Size is a soft goal (budget in `package.json`). Name bindings for readers; a con
 Omakase: one obvious path over knobs. Test the guarantee a user relies on. Add complexity when concrete pressure shows up.
 
 - oxfmt owns formatting on its defaults. `npm run fmt`.
-- Bindings named for readers (`chars`, `pos`, `states`, `preds`). True loop counters (`j`) stay single letters. Rename with a scope-aware tool: a bare `s` also lives in strings and unrelated scopes, and `{ c }` shorthand is how `Matcher.c` became `Matcher.char`.
+- Bindings named for readers (`chars`, `pos`, `states`, `preds`). True loop counters (`j`) stay single letters. Rename with a scope-aware tool: a bare `s` also lives in strings and unrelated scopes, and `{ c }` shorthand renames the property, not just the binding.
 - Tests are `node:test` in `test/*.test.js` (`match`, `errors`, `safety`, `differential`), run against `lib/`. New syntax or a new guard belongs in the matching suite and in `fuzz/structured.fuzz.js`. Keep the fuzz differential oracle on short patterns and subjects so the native comparison engine cannot become a bottleneck. `.fuzz-corpus/` and generated artifacts stay uncommitted.
 - ESM only. Two module formats would split the diagnostics WeakMap across a `require` / `import` seam.
 - Conventional Commits, at most 80 characters, checked by `commitlint.config.mjs` from `.githooks/commit-msg`. Enable it once per clone with `git config core.hooksPath .githooks`. The hook fails rather than skips when commitlint is missing: no CI job checks messages, so a skip would be no gate at all, and this repo's release notes are generated from these messages. `npm run commitlint -- --last --verbose` checks one by hand.
