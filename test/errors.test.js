@@ -33,6 +33,8 @@ test("invalid I-Regexp syntax throws SyntaxError", () => {
     "[[]",
     "[a[b]",
     "[z-a]",
+    "[\\d-z]",
+    "[a-\\d]",
     "\\d+",
     "(?=a)",
     "(a)\\1",

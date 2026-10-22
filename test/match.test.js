@@ -23,6 +23,10 @@ test("quantifiers and empty branches", () => {
     ["a{2,}", ["aa", "aaaaa"], ["a"]],
     ["a|", ["", "a"], ["aa"]],
     ["", [""], ["a"]],
+    // The brace after an escaped literal opens a quantifier, not the name of
+    // a Unicode property: only `\p` and `\P` take one of those.
+    ["\\.{2}", [".."], [".", "..."]],
+    ["\\({2}", ["(("], ["("]],
   ]) {
     const re = compile(pattern);
     for (const value of yes)
