@@ -14,7 +14,7 @@ The matcher accepts only Unicode scalar values. Lone surrogates in patterns or s
 
 Do not open a public GitHub issue for a security vulnerability.
 
-Use [GitHub's private vulnerability form](https://github.com/getquario/treffer/security/advisories/new).
+Use [GitHub's private vulnerability form](https://github.com/robinvdvleuten/treffer/security/advisories/new).
 
 Include the affected code, its impact, and steps that reproduce the issue. Tell us whether and how to credit you.
 

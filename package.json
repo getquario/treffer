@@ -16,7 +16,7 @@
     "email": "robin@webstronauts.com",
     "url": "https://robinvdvleuten.nl"
   },
-  "repository": "getquario/treffer",
+  "repository": "robinvdvleuten/treffer",
   "files": [
     "lib",
     "EMBEDDING.md"

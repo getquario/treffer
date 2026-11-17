@@ -21,8 +21,6 @@ isbn.match("ISBN 9780131103627"); //=> false
 isbn.search("ISBN 9780131103627"); //=> true   — search() looks for a substring
 ```
 
-<img src="https://getquario.com/favicon.svg" alt="Quario logo" width="16" height="16" /> <b>treffer</b> is built by the team behind <b><a href="https://getquario.com?utm_source=github&utm_medium=readme&utm_campaign=treffer">Quario</a></b>, a declarative reporting engine for JavaScript that renders JSON report definitions to <b>HTML, PDF, workbooks, and Word</b> — without <code>eval</code>.
-
 ## Contents
 
 - [Install](#install)
@@ -86,8 +84,8 @@ treffer answers one question: does this pattern match this string? It returns a 
 
 ## Related packages
 
-- **[padvinder](https://github.com/getquario/padvinder)** — an RFC 9535 JSONPath engine, and treffer's main consumer: JSONPath's `match()` and `search()` filter functions are defined in terms of I-Regexp, which is most of why this package exists. If you're reaching for treffer to filter a JSON document, padvinder may be the layer you actually want.
-- **[xprsn](https://github.com/getquario/xprsn)** and **[sjabloon](https://github.com/getquario/sjabloon)** — an expression language and a template engine from the same family, both CSP-safe and dependency-light, if the untrusted input you're evaluating is a rule or a template rather than a pattern.
+- **[padvinder](https://github.com/robinvdvleuten/padvinder)** — an RFC 9535 JSONPath engine, and treffer's main consumer: JSONPath's `match()` and `search()` filter functions are defined in terms of I-Regexp, which is most of why this package exists. If you're reaching for treffer to filter a JSON document, padvinder may be the layer you actually want.
+- **[xprsn](https://github.com/robinvdvleuten/xprsn)** and **[sjabloon](https://github.com/robinvdvleuten/sjabloon)** — an expression language and a template engine from the same family, both CSP-safe and dependency-light, if the untrusted input you're evaluating is a rule or a template rather than a pattern.
 
 ## Syntax
 
@@ -205,7 +203,7 @@ If you compile patterns out of a larger document — a filter selector in a JSON
 ## Contributing
 
 ```bash
-git clone https://github.com/getquario/treffer.git
+git clone https://github.com/robinvdvleuten/treffer.git
 cd treffer
 npm install
 git config core.hooksPath .githooks   # enable the commit-msg hook
